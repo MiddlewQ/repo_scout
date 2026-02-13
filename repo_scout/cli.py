@@ -1,5 +1,7 @@
 import argparse
 
+from repo_root import resolve_repo_root
+
 def main():
     parser = argparse.ArgumentParser(description="Repository Scout")
     parser.add_argument("-f", "--files", action="store_true")
