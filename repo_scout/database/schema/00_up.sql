@@ -1,9 +1,3 @@
-CREATE TABLE directories(
-    id INTEGER PRIMARY KEY,
-    filepath TEXT NOT NULL,
-    
-)
-
 CREATE TABLE nodes IF NOT EXISTS(
     path TEXT PRIMARY KEY,
     kind TEXT NOT NULL CHECK(kind in ('file', "dir")),
