@@ -5,10 +5,15 @@ from .file_type import file_ext_to_file_type
 from .tool_response import response_ok, response_error
 
 def create_dir_info(entry: os.DirEntry, root: str) -> dict:
+    stats = entry.stat(follow_symlinks=False)
     relative_path = os.path.relpath(entry.path, root)
     return {
         "path": relative_path,
         "kind": "dir",
+        "file_type": None,
+        "size_bytes": None,
+        "hash": None,
+        "last_modified": stats.st_mtime,
     }
 
 def create_file_info(entry: os.DirEntry, root: str) -> dict:
@@ -20,10 +25,10 @@ def create_file_info(entry: os.DirEntry, root: str) -> dict:
     return {
         "path": relative_path,
         "kind": "file",
-        "size": stats.st_size,
-        "last_modified": stats.st_mtime,
+        "file_type": file_ext_to_file_type(ext).value,
+        "size_bytes": stats.st_size,
         "hash": None,
-        "file_type": file_ext_to_file_type(ext).value
+        "last_modified": stats.st_mtime,
     }
 
 def fs_tree(root: str = ".",
@@ -37,7 +42,8 @@ def fs_tree(root: str = ".",
         "depth": depth,
         "ignore_list": ignore
     }
-    return response_ok(filesystem)
+    # return response_ok(filesystem)
+    return filesystem
     
 
 def fs_tree_helper(curr: str,
