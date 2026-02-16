@@ -10,6 +10,7 @@ def find_repo_root(curr_dir: str | None = None) -> str | None:
         parent = os.path.dirname(curr_dir)
         if curr_dir == parent:
             return None
+        curr_dir = parent
 
 
 def resolve_repo_root(repo_arg: str | None = None):
