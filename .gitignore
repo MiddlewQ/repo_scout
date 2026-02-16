@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Project environment
+.repo_scout
+
 # Virtual environments
 .venv
 
