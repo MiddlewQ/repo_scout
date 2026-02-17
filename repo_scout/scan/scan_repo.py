@@ -31,27 +31,25 @@ def create_file_info(entry: os.DirEntry, root: str) -> dict:
         "last_modified": stats.st_mtime,
     }
 
+def scan_repo(root, ignore, depth):
+    return
+
 def fs_tree(root: str = ".",
             ignore: set[str] | None=None,
-            depth: int = 2):
+            depth: int | None = None):
     if ignore is None:
         ignore = set()
-    
+
     filesystem = fs_tree_helper(root, root, ignore, depth)
-    meta = {
-        "depth": depth,
-        "ignore_list": ignore
-    }
-    # return response_ok(filesystem)
     return filesystem
     
 
 def fs_tree_helper(curr: str,
             root: str,
             ignore: set[str],
-            depth: int):
+            depth: int | None):
     out: dict[str, Any] = {}
-    if depth <= 0:
+    if depth is not None and depth <= 0:
         return out
     try:
         with os.scandir(curr) as it:
@@ -61,7 +59,8 @@ def fs_tree_helper(curr: str,
                     continue
                 if entry.is_dir(follow_symlinks=False):
                     out[name] = create_dir_info(entry, root)
-                    out[name]["children"] = fs_tree_helper(entry.path, root, ignore, depth - 1)
+                    next_depth = None if depth is None else depth - 1
+                    out[name]["children"] = fs_tree_helper(entry.path, root, ignore, next_depth)
                 elif entry.is_file(follow_symlinks=False):
                     out[name] = create_file_info(entry, root)
     except OSError as e:
