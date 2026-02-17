@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS nodes(
     path TEXT PRIMARY KEY,
     parent_path TEXT,
     kind TEXT NOT NULL CHECK(kind in ("file", "dir")),
-
+    
+    hash TEXT,
     file_type TEXT,
     size_bytes INTEGER,
     last_modified REAL NOT NULL,
