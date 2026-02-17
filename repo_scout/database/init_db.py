@@ -1,7 +1,9 @@
 import os, sqlite3
 
 def init_db(db_path: str = ":memory:", schema_dir: str = "./schema") -> sqlite3.Connection:
-    os.makedirs(db_path, exist_ok=True)
+    if db_path != ":memory:":
+        parent = os.path.dirname(db_path)
+        os.makedirs(parent, exist_ok=True)
     print(db_path) 
     sql_files = [
         os.path.join(schema_dir, name)
@@ -19,3 +21,4 @@ def init_db(db_path: str = ":memory:", schema_dir: str = "./schema") -> sqlite3.
             with open(path, "r", encoding="utf-8") as f:
                 conn.executescript(f.read())
     return conn
+

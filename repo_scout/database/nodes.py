@@ -1,7 +1,27 @@
 import os, sqlite3
 
-def get_nodes(conn: sqlite3.Connection):
+def nodes(conn: sqlite3.Connection):
     return conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
+
+def file_count(conn: sqlite3.Connection):
+    return conn.execute('SELECT COUNT(*) FROM nodes WHERE kind = "file"').fetchone()[0]
+
+def file_by_scan(conn: sqlite3.Connection, scan_id: int) -> list:
+    return conn.execute(
+        "SELECT * FROM nodes WHERE last_seen_id = ?", 
+        (scan_id, )
+    ).fetchall()
+
+def file_by_dir(conn: sqlite3.Connection, path: str) -> list:
+    return conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
+
+def largest_file(conn: sqlite3.Connection):
+    return conn.execute('SELECT * FROM nodes WHERE kind="file" ORDER BY size_bytes DESC LIMIT 1').fetchone()
+
+def max_depth(conn: sqlite3.Connection):
+    return 1
+
+
 
 def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, last_seen_run: int, parent_path: str | None = None):        
     for name, node in filesystem.items():
@@ -39,7 +59,5 @@ def insert_node(conn: sqlite3.Connection, path, parent_path, kind, file_type, la
         """,
         (path, parent_path, kind, file_type, size_bytes, last_modified, last_seen_run)
     )
-
-
 
 
