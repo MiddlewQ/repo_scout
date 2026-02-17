@@ -74,22 +74,3 @@ def main():
         pass
     return 
 
-    if args.verbose:
-        print(args)
-    try:
-        repo_root = resolve_repo_root(args.repo)
-        ensure_repo_scout_dir(repo_root)
-        db_path = db_path_to_root(repo_root)
-        filesystem=fs_tree(repo_root, ignore=args.ignore, depth=args.depth)
-        
-        conn = init_db(db_path)
-        run_id = begin_scan_run(conn)
-        walk_and_insert(conn, filesystem=filesystem, last_seen_run=run_id)
-        output = nodes(conn),
-        for row in output:
-            print(row)
-        
-         
-    except Exception as e: 
-        print("Error raised:", type(e).__name__, e)
-        sys.exit(1)
