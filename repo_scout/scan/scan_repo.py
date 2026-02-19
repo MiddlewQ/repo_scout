@@ -3,36 +3,7 @@ from typing import Any
 
 from .file_type import file_ext_to_file_type
 from .tool_response import response_ok, response_error
-
-def create_dir_info(entry: os.DirEntry, root: str) -> dict:
-    stats = entry.stat(follow_symlinks=False)
-    relative_path = os.path.relpath(entry.path, root)
-    return {
-        "path": relative_path,
-        "kind": "dir",
-        "file_type": None,
-        "size_bytes": None,
-        "hash": None,
-        "last_modified": stats.st_mtime,
-    }
-
-def create_file_info(entry: os.DirEntry, root: str) -> dict:
-    stats = entry.stat(follow_symlinks=False)
-    file_name, ext = os.path.splitext(entry.name)
-    if ext == '':
-        ext = file_name
-    relative_path = os.path.relpath(entry.path, root)
-    return {
-        "path": relative_path,
-        "kind": "file",
-        "file_type": file_ext_to_file_type(ext).value,
-        "size_bytes": stats.st_size,
-        "hash": None,
-        "last_modified": stats.st_mtime,
-    }
-
-def scan_repo(root, ignore, depth):
-    return
+from .scan_node import hash_file_content, create_dir_info, create_file_info
 
 def fs_tree(root: str = ".",
             ignore: set[str] | None=None,
