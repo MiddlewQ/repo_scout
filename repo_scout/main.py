@@ -1,5 +1,4 @@
 from .cli import init_parser
-from .commands.scan import run_scan
 
 def main():
 
