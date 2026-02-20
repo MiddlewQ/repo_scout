@@ -1,7 +1,7 @@
 # This file contains functions that hash file content, depending on the operating system. 
 import os, hashlib
 
-from .file_type import file_ext_to_file_type
+from .file_type import detect_file_type
 
 def hash_file_content(filepath, chunk_size = 10000):
     h = hashlib.sha256()
@@ -29,15 +29,13 @@ def create_dir_info(entry: os.DirEntry, root: str) -> dict:
 
 def create_file_info(entry: os.DirEntry, root: str) -> dict:
     stats = entry.stat(follow_symlinks=False)
-    file_name, ext = os.path.splitext(entry.name)
-    if ext == '':
-        ext = file_name
+    file_type = detect_file_type(entry.name)
     relative_path = os.path.relpath(entry.path, root)
     return {
         "path": relative_path,
         "kind": "file",
-        "file_type": file_ext_to_file_type(ext).value,
+        "file_type": file_type,
         "size_bytes": stats.st_size,
-        "hash": hash_file_content(relative_path),
+        "hash": hash_file_content(entry.path),
         "last_modified": stats.st_mtime,
     }
