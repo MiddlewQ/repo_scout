@@ -2,7 +2,6 @@ import os
 from typing import Any
 
 from .file_type import file_ext_to_file_type
-from .tool_response import response_ok, response_error
 from .scan_node import hash_file_content, create_dir_info, create_file_info
 
 def fs_tree(root: str = ".",
@@ -37,3 +36,32 @@ def fs_tree_helper(curr: str,
     except OSError as e:
         out["__error__"] = f"{type(e).__name__}: {e}"
     return out
+
+# def fs_read(filepath: str, max_chars = 2000) -> dict[str, Any]:
+#     try:
+#         with open(filepath, mode="r", encoding="utf-8") as f:
+#             content = f.read(max_chars)
+#             truncated = f.read(1) != ""
+#             meta = {
+#                 "truncated": truncated,
+#                 "max_chars": max_chars
+#             }
+#     except OSError as e:
+#         return response_error(error_type=f'{e}')
+
+#     return c
+
+# def fs_read_help(filepath: str, max_chars = 2000):
+#     try:
+#         with open(filepath, mode="r", encoding="utf-8") as f:
+#             content = f.read(max_chars)
+#             truncated = f.read(1) != ""
+#             meta = {
+#                 "truncated": truncated,
+#                 "max_chars": max_chars
+#             }
+#             return {"content": content}
+#     except OSError as e:
+#         pass
+
+#     pass
