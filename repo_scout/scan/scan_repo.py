@@ -1,15 +1,17 @@
 import os
 from typing import Any
 
-from .file_type import file_ext_to_file_type
-from .scan_node import hash_file_content, create_dir_info, create_file_info
+from .scan_node import create_dir_info, create_file_info
+from .config import *
 
 def fs_tree(root: str = ".",
             ignore: set[str] | None=None,
             depth: int | None = None):
     if ignore is None:
-        ignore = set()
-
+        ignore = set(DEFAULT_IGNORE_NAMES)
+    else:
+        ignore |= DEFAULT_IGNORE_NAMES
+    
     filesystem = fs_tree_helper(root, root, ignore, depth)
     return filesystem
     
