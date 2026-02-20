@@ -88,8 +88,23 @@ def file_by_scan(conn: sqlite3.Connection, scan_id: int) -> list:
 def file_by_dir(conn: sqlite3.Connection, path: str) -> list:
     return conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
 
-def largest_file(conn: sqlite3.Connection):
-    return conn.execute('SELECT * FROM nodes WHERE kind="file" ORDER BY size_bytes DESC LIMIT 1').fetchone()
+def largest_files(conn: sqlite3.Connection, run_id: int | None = None, file_count: int = 1):
+    statement = """"
+    SELECT *
+    FROM nodes
+    WHERE kind = "file"
+    """
+
+    params: list[object] = []
+
+    if run_id is not None:
+        statement += "AND run_id = ?"
+        params.append(run_id)
+    
+    statement += "ORDER BY size_bytes DESC LIMIT ?"
+    params.append(file_count)
+
+    return conn.execute('SELECT * FROM nodes WHERE kind="file" ORDER BY size_bytes DESC LIMIT ?', params).fetchall()
 
 def max_depth(conn: sqlite3.Connection):
     return 1
