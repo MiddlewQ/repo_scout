@@ -28,7 +28,7 @@ def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
     UPDATE nodes 
     SET deleted = 1 
     WHERE deleted = 0 
-      AND last_seen_id <> ?
+      AND last_seen_run <> ?
     """
     conn.execute(statement, (scan_id, ))
 
