@@ -59,8 +59,12 @@ def main():
 
     if args.verbose:
         print(args)
-    
-    if args.command == "scan":
+
+    if args.command is None:
+        parser.print_help()
+        sys.exit(0)
+
+    elif args.command == "scan":
         scan_command(args)
 
     elif args.command == "changed":
@@ -72,5 +76,6 @@ def main():
     elif args.command == "duped":
         # TODO: Implement
         pass
-    return 
+    else:
+        print("Unexpected command, try again.")
 
