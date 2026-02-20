@@ -1,12 +1,11 @@
 import os, sqlite3
 
 
-def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, last_seen_run: int, parent_path: str | None = None):        
+def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, scan_id: int, parent_path: str | None = None):        
     for name, node in filesystem.items():
         if name == "__error__":
             continue
 
-        
         insert_node (
             conn=conn,
             path=node["path"],
@@ -14,14 +13,24 @@ def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, last_seen_run: i
             kind=node["kind"],
             file_type=node["file_type"],
             last_modified=node["last_modified"],
-            last_seen_run=last_seen_run,
+            last_seen_run=scan_id,
+            hash=node["hash"],
             size_bytes=node["size_bytes"],
         )
         if node["kind"] == "dir":
             walk_and_insert(conn=conn, 
                             filesystem=node.get("children", {}), 
                             parent_path=node["path"], 
-                            last_seen_run=last_seen_run)
+                            scan_id=scan_id)
+
+def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
+    statement = """
+    UPDATE nodes 
+    SET deleted = 1 
+    WHERE deleted = 0 
+      AND last_seen_id <> ?
+    """
+    conn.execute(statement, (scan_id, ))
 
 
 def node_unchanged(conn: sqlite3.Connection, path: str, size_bytes: int, last_modified: float) -> bool:
@@ -36,20 +45,32 @@ def node_unchanged(conn: sqlite3.Connection, path: str, size_bytes: int, last_mo
     return conn.execute(statement, (path, size_bytes, last_modified)).fetchone()[0] is not None
 
 
-def insert_node(conn: sqlite3.Connection, path, parent_path, kind, file_type, last_modified, last_seen_run, hash = None, size_bytes = None):
+def insert_node(
+    conn: sqlite3.Connection, 
+    path: str, 
+    parent_path: str | None, 
+    kind: str, 
+    file_type: str | None, 
+    last_modified: float | None, 
+    last_seen_run: int, 
+    hash: str | None = None, 
+    size_bytes: int | None = None
+) -> None:
     conn.execute(
         """
-        INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run, deleted) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         ON CONFLICT(path) DO UPDATE SET
             parent_path   = excluded.parent_path,
             kind          = excluded.kind,
             file_type     = excluded.file_type,
             size_bytes    = excluded.size_bytes,
+            hash          = excluded.hash,
             last_modified = excluded.last_modified,
-            last_seen_run = excluded.last_seen_run
+            last_seen_run = excluded.last_seen_run,
+            deleted       = 0
         """,
-        (path, parent_path, kind, file_type, size_bytes, last_modified, last_seen_run)
+        (path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run)
     )
 
 def nodes(conn: sqlite3.Connection):
@@ -72,6 +93,5 @@ def largest_file(conn: sqlite3.Connection):
 
 def max_depth(conn: sqlite3.Connection):
     return 1
-
 
 
