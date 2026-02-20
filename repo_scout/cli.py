@@ -3,10 +3,8 @@ from typing import Any
 
 
 from .repo_root import *
-from .database.init_db import init_db
 from .database.nodes import *
-from .database.scan_runs import *
-from .scan.scan_repo import fs_tree
+from .commands.scan import run_scan
 
 def ensure_repo_scout_dir(repo_root: str) -> str:
     dir = os.path.join(repo_root, ".repo_scout")
@@ -20,62 +18,72 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument("--verbose", action="store_true", help="Enables verbose output")
     subparsers = parser.add_subparsers(dest="command", help="Commands help")
 
-    scan_parser = subparsers.add_parser("scan", help="Scan repository for files to store in database")
-    scan_parser.add_argument("--depth", type=int, default=None, help="Limits the depth of the file search in the repository")
-    scan_parser.add_argument("--ignore", type=set, help="Directories ignored by the repository scout") 
-
-    largest_parser = subparsers.add_parser("largest", help="Gives information about the largest file in the filesystem")
-    changed_parser = subparsers.add_parser("changed", help="Tell you which files have changed since the last scan")
-    duped_parser = subparsers.add_parser("duped", help="Gives information about which files share duplicate hashes")
+    add_scan_subcommand(subparsers)
+    add_largest_subcommand(subparsers)
+    add_changed_subcommand(subparsers)
+    add_duped_subcommand(subparsers)
 
     return parser
 
+def add_scan_subcommand(subparsers):
+    p = subparsers.add_parser("scan", help="Scan repository for files to store in database")
+    p.add_argument("--depth", type=int, default=None, help="Limits the depth of the file search in the repository")
+    p.add_argument("--ignore", type=set, default=[], help="Directories ignored by the repository scout") 
+    p.set_defaults(func=handle_scan)
 
-def scan_command(args):
-    repo_root = resolve_repo_root(args.repo)
-    if args.verbose:
-        print(f"Repo root: {repo_root}")
-    filesystem = fs_tree(repo_root, args.ignore, args.depth)
+def handle_scan(args):
+    return run_scan(
+        repo=args.repo,
+        ignore=set(args.ignore),
+        depth=args.depth,
+        verbose=args.verbose 
+    )
+def add_largest_subcommand(subparsers):
+    p = subparsers.add_parser("largest", help="Gives information about the largest file in the filesystem")
+    p.add_argument("--ignore", type=set, default=[])    
+    # p.set_defaults(func=)
 
-    db_path = db_path_to_root(repo_root)
-    conn = init_db(db_path)
-    try:
-        scan_id = begin_scan_run(conn)
-        walk_and_insert(conn, filesystem, scan_id)
-        if args.verbose:
-            num_nodes = file_count(conn)
+def add_changed_subcommand(subparsers):
+    p = subparsers.add_parser("changed", help="Tell you which files have changed since the last scan")
+    p.add_argument("--ignore", type=set, default=[])
+    # p.set_defaults(func=)
+
+def add_duped_subcommand(subparsers):
+    p = subparsers.add_parser("duped", help="Gives information about which files share duplicate hashes")
+    p.add_argument("--ignore", type=set, default=[])
+    # p.set_defaults(func=)
 
 
-            print(f"Finished scan {scan_id}. Found {num_nodes} files.")
-    finally:
-        conn.commit()
-        conn.close()
 
+# def main():
 
-def main():
+#     parser = init_parser()
+#     args = parser.parse_args()
 
-    parser = init_parser()
-    args = parser.parse_args()
+#     if args.verbose:
+#         print(args)
 
-    if args.verbose:
-        print(args)
+#     if args.command is None:
+#         parser.print_help()
+#         sys.exit(0)
 
-    if args.command is None:
-        parser.print_help()
-        sys.exit(0)
+#     elif args.command == "scan":
+#         scan_id = run_scan(
+#             repo=args.repo,
+#             ignore=set(args.ignore),
+#             depth=args.depth,
+#             verbose=args.verbose 
+#         )
 
-    elif args.command == "scan":
-        scan_command(args)
-
-    elif args.command == "changed":
-        # TODO: implement
-        pass
-    elif args.command == "largest":
-        # TODO: Implement
-        pass
-    elif args.command == "duped":
-        # TODO: Implement
-        pass
-    else:
-        print("Unexpected command, try again.")
+#     elif args.command == "changed":
+#         # TODO: implement
+#         pass
+#     elif args.command == "largest":
+#         # TODO: Implement
+#         pass
+#     elif args.command == "duped":
+#         # TODO: Implement
+#         pass
+#     else:
+#         print("Unexpected command, try again.")
 
