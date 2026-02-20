@@ -1,43 +1,55 @@
+import os
 from enum import Enum
 
 class FileType(Enum):
-    Python = "python"
-    Javascript = "js"
-    C = "C"
-    Cpp = "C++"
-    SQLite = "sql"
-    Rust = "rust"
-    Toml = "toml"
-    Json = "json"
-    Makefile = "makefile"
-    Markdown = "markdown"
-    Text = "text"
-    Unknown = "other"
+    PYTHON = "python"
+    JAVASCRIPT = "js"
+    C = "c"
+    CPP = "cpp"
+    SQLITE = "sql"
+    RUST = "rust"
+    TOML = "toml"
+    JSON = "json"
+    MAKEFILE = "makefile"
+    MARKDOWN = "markdown"
+    TEXT = "text"
+    UNKNOWN = "other"
+
+def detect_file_type(filename: str) -> str:
+    lower = filename.lower()
+
+    if lower == "makefile":
+        return "makefile"
+    if lower == "dockerfiler":
+        return "dockerfile"
+
+    _, ext = os.path.splitext(lower)
+    return file_ext_to_file_type(ext).value
 
 def file_ext_to_file_type(ext):
     ext = ext.lstrip(".").lower()
     match ext:
         case "py":
-            return FileType.Python
+            return FileType.PYTHON
         case "js":
-            return FileType.Javascript
+            return FileType.JAVASCRIPT
         case "c" | "h":
             return FileType.C
         case "cc" | "cpp" | "cxx" | "C" | "hh" | "hpp" | "hxx" | "H": 
-            return FileType.Cpp
+            return FileType.CPP
         case "sql":
-            return FileType.SQLite
+            return FileType.SQLITE
         case "rs":
-            return FileType.Rust
+            return FileType.RUST
         case "toml":
-            return FileType.Toml
+            return FileType.TOML
         case "json":
-            return FileType.Json
+            return FileType.JSON
         case "md":
-            return FileType.Markdown
+            return FileType.MARKDOWN
         case "txt":
-            return FileType.Text
+            return FileType.TEXT
         case _:
-            return FileType.Unknown
+            return FileType.UNKNOWN
 
     
