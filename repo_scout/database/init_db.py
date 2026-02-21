@@ -4,7 +4,7 @@ def init_db(db_path: str = ":memory:", schema_dir: str = "./schema") -> sqlite3.
     if db_path != ":memory:":
         parent = os.path.dirname(db_path)
         os.makedirs(parent, exist_ok=True)
-    print(db_path) 
+    
     sql_files = [
         os.path.join(schema_dir, name)
         for name in os.listdir(schema_dir)
