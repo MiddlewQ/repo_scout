@@ -88,25 +88,30 @@ def file_by_scan(conn: sqlite3.Connection, scan_id: int) -> list:
 def file_by_dir(conn: sqlite3.Connection, path: str) -> list:
     return conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
 
-def largest_files(conn: sqlite3.Connection, run_id: int | None = None, file_count: int = 1):
-    statement = """"
+def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str] = set()):
+    sql = """
     SELECT *
     FROM nodes
-    WHERE kind = "file"
+    WHERE kind = ?
+      AND deleted = 0 
     """
 
-    params: list[object] = []
-
-    if run_id is not None:
-        statement += "AND run_id = ?"
-        params.append(run_id)
+    params: list[object] = ["file"]
     
-    statement += "ORDER BY size_bytes DESC LIMIT ?"
-    params.append(file_count)
+    if ignore:
+        placeholders = ",".join(["?" * len(ignore)])
+        sql += f" AND path NOT IN ({placeholders})"
+        params.extend(sorted(ignore))
 
-    return conn.execute('SELECT * FROM nodes WHERE kind="file" ORDER BY size_bytes DESC LIMIT ?', params).fetchall()
+    sql += "ORDER BY size_bytes DESC LIMIT ?"
+    params.append(file_count)
+    
+    return conn.execute(sql, params).fetchall()
 
 def max_depth(conn: sqlite3.Connection):
     return 1
 
-
+def clear_nodes(conn: sqlite3.Connection) -> int:
+    conn.execute("DELETE FROM nodes")
+    return conn.execute("SELECT changes()").fetchone()[0]
+    
