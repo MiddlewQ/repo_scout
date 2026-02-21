@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS nodes;
-
 CREATE TABLE IF NOT EXISTS scan_runs(
     id INTEGER PRIMARY KEY, 
     started_at REAL NOT NULL
