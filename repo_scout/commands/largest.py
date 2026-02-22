@@ -5,8 +5,6 @@ from repo_scout.database.init_db import init_db
 from repo_scout.repo_root import resolve_repo_root, db_path_to_root
 
 def run_largest(*, repo: str | None, file_count: int, ignore: set[str] | None = None, depth: int | None = None, verbose: bool = False):
-    
-
     repo_root = resolve_repo_root(repo)
     if verbose:
         print(f"Repo root: {repo_root}")
@@ -23,13 +21,12 @@ def run_largest(*, repo: str | None, file_count: int, ignore: set[str] | None = 
         if verbose: 
             print(f"Found {len(files)} files.")
 
-        conn.commit()
-        
     except Exception as e:
         conn.rollback()
         raise
     finally:
         conn.close()
 
-    print(files)
+    return files
+   
     
