@@ -18,14 +18,16 @@ def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: 
         walk_and_insert(conn, filesystem, scan_id)
         mark_unseen_nodes_deleted(conn, scan_id)
 
-        conn.commit()
-
         if verbose:
             num_files = file_count(conn)
             print(f"Finished scan {scan_id}, Found {num_files} files.")
-        return scan_id
+
+        conn.commit()
+
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
+    
+    return scan_id
