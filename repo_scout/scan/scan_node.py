@@ -3,7 +3,7 @@ import os, hashlib
 
 from .file_type import detect_file_type
 
-def hash_file_content(filepath, chunk_size = 10000):
+def hash_file_content(filepath, chunk_size = 1000):
     h = hashlib.sha256()
     try:
         with open(filepath, mode="rb") as f:
@@ -39,3 +39,4 @@ def create_file_info(entry: os.DirEntry, root: str) -> dict:
         "hash": hash_file_content(entry.path),
         "last_modified": stats.st_mtime,
     }
+
