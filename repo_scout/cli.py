@@ -1,12 +1,12 @@
-import argparse, os, sys
-from typing import Any
-
+import argparse, os
 
 from .repo_root import *
 from .database.nodes import *
 from .commands.scan import run_scan
 from .commands.largest import run_largest
 from .commands.clear import run_clear
+from .commands.dupes import run_dupes
+from .output import format_largest, format_dupes
 
 def ensure_repo_scout_dir(repo_root: str) -> str:
     dir = os.path.join(repo_root, ".repo_scout")
@@ -23,7 +23,7 @@ def init_parser() -> argparse.ArgumentParser:
     add_scan_subcommand(subparsers)
     add_largest_subcommand(subparsers)
     add_changed_subcommand(subparsers)
-    add_duped_subcommand(subparsers)
+    add_dupes_subcommand(subparsers)
     add_clear_subcommand(subparsers)
 
     return parser
@@ -45,28 +45,41 @@ def handle_scan(args):
 def add_largest_subcommand(subparsers):
     p = subparsers.add_parser("largest", help="Gives information about the largest file in the filesystem")
     p.add_argument("-I", "--ignore", type=lambda s: s.split("|"))
-    p.add_argument("-n", "--count", type=int, default=5, help="How many files you want to return")
+    p.add_argument("-n", "--limit", type=int, default=5, help="Limit number of files return, default: 5")
+    p.add_argument("--json", action="store_true", help="Output Json instead or readable format")
     p.set_defaults(func=handle_largest)
 
 def handle_largest(args):
     ignore = set(args.ignore) if args.ignore is not None else set()
-    return run_largest(
+    files = run_largest(
         repo=args.repo,
-        file_count=args.count,
+        file_count=args.limit,
         ignore=ignore,
         depth=None,
         verbose=args.verbose
     )
+    format_largest(files)
 
 def add_changed_subcommand(subparsers):
     p = subparsers.add_parser("changed", help="Tell you which files have changed since the last scan")
     p.add_argument("--ignore", type=lambda s: s.split("|"))
     # p.set_defaults(func=)
 
-def add_duped_subcommand(subparsers):
-    p = subparsers.add_parser("duped", help="Gives information about which files share duplicate hashes")
+def add_dupes_subcommand(subparsers):
+    p = subparsers.add_parser("dupes", help="Gives information about which files share duplicate hashes")
     p.add_argument("--ignore", type=lambda s: s.split("|"))
-    # p.set_defaults(func=)
+    p.add_argument("--include-empty", action="store_true")
+    p.set_defaults(func=handle_dupes)
+
+def handle_dupes(args):
+    ignore = set(args.ignore) if args.ignore is not None else set()
+    dupes = run_dupes(
+        repo=args.repo,
+        ignore=args.ignore,
+        include_empty=args.include_empty,
+        verbose=args.verbose
+    )
+    format_dupes(dupes)
 
 def add_clear_subcommand(subparsers):
     p = subparsers.add_parser("clear", help="Clear old scans from the database.")

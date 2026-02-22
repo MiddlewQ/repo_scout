@@ -1,4 +1,4 @@
-import os, sqlite3
+import sqlite3
 
 
 def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, scan_id: int, parent_path: str | None = None):        
@@ -115,3 +115,23 @@ def clear_nodes(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM nodes")
     return conn.execute("SELECT changes()").fetchone()[0]
     
+def get_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
+    sql = """
+    SELECT hash, 
+           COUNT(*) AS c 
+    FROM nodes 
+    WHERE kind='file'
+    """
+
+    if not include_empty:
+        sql += " AND size_bytes <> 0 "
+
+    sql += """
+      AND deleted=0 
+      AND hash IS NOT NULL 
+    GROUP BY hash 
+    HAVING c > 1;
+    """
+
+    return conn.execute(sql).fetchall()
+
