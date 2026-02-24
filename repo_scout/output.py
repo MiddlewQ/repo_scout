@@ -27,6 +27,7 @@ def format_dupes(duplicate_hashes: list):
     hash_width = 64
     line_width = count_width + 1 + hash_width
 
+    print("=" * line_width)
     print(f"{'Count':>{count_width}} {'Hash':<{hash_width}}")
     print("=" * line_width)
 
