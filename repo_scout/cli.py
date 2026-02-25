@@ -18,6 +18,7 @@ def init_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repo", type=str, default=None, help="Repository you want to create index for. Default search for repository root from current directory")
     parser.add_argument("--db", type=str, default=None, help="Database that stores previous scans of the repository. Default searches for database in repo_scout directory in root")
     parser.add_argument("--verbose", action="store_true", help="Enables verbose output")
+    parser.add_argument("--debug", action="store_true", help="Debug prints")
     subparsers = parser.add_subparsers(dest="command", help="Commands help")
 
     add_scan_subcommand(subparsers)
@@ -44,17 +45,18 @@ def handle_scan(args):
     )
 def add_largest_subcommand(subparsers):
     p = subparsers.add_parser("largest", help="Gives information about the largest file in the filesystem")
-    p.add_argument("-I", "--ignore", type=lambda s: s.split("|"))
+    p.add_argument("-I", "--ignore", type=lambda s: s.split("|"), default=[], help='List of files ignored. Example use: --ignore "file1.txt|file2|file3"')
     p.add_argument("-n", "--limit", type=int, default=5, help="Limit number of files return, default: 5")
     p.add_argument("--json", action="store_true", help="Output Json instead or readable format")
     p.set_defaults(func=handle_largest)
 
 def handle_largest(args):
-    ignore = set(args.ignore) if args.ignore is not None else set()
+    if args.debug:
+        print(args.ignore)
     files = run_largest(
         repo=args.repo,
         file_count=args.limit,
-        ignore=ignore,
+        ignore=set(args.ignore),
         depth=None,
         verbose=args.verbose
     )
@@ -67,15 +69,14 @@ def add_changed_subcommand(subparsers):
 
 def add_dupes_subcommand(subparsers):
     p = subparsers.add_parser("dupes", help="Gives information about which files share duplicate hashes")
-    p.add_argument("--ignore", type=lambda s: s.split("|"))
+    p.add_argument("--ignore", type=lambda s: s.split("|"), default=[])
     p.add_argument("--include-empty", action="store_true")
     p.set_defaults(func=handle_dupes)
 
 def handle_dupes(args):
-    ignore = set(args.ignore) if args.ignore is not None else set()
     dupes = run_dupes(
         repo=args.repo,
-        ignore=args.ignore,
+        ignore=set(args.ignore),
         include_empty=args.include_empty,
         verbose=args.verbose
     )
@@ -94,36 +95,3 @@ def handle_clear(args):
         after=args.after,
         verbose = args.verbose
     )
-
-# def main():
-
-#     parser = init_parser()
-#     args = parser.parse_args()
-
-#     if args.verbose:
-#         print(args)
-
-#     if args.command is None:
-#         parser.print_help()
-#         sys.exit(0)
-
-#     elif args.command == "scan":
-#         scan_id = run_scan(
-#             repo=args.repo,
-#             ignore=set(args.ignore),
-#             depth=args.depth,
-#             verbose=args.verbose 
-#         )
-
-#     elif args.command == "changed":
-#         # TODO: implement
-#         pass
-#     elif args.command == "largest":
-#         # TODO: Implement
-#         pass
-#     elif args.command == "duped":
-#         # TODO: Implement
-#         pass
-#     else:
-#         print("Unexpected command, try again.")
-
