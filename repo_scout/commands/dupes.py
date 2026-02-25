@@ -1,7 +1,7 @@
 import os
 
 from repo_scout.repo_root import resolve_repo_root, db_path_to_root
-from repo_scout.database.nodes import get_dupes
+from repo_scout.database.nodes import hash_dupes, filepaths_by_hash
 from repo_scout.database.init_db import init_db
 
 def run_dupes(repo: str, ignore: set[str] | None = None, include_empty: bool = False, verbose: bool = False):
@@ -15,17 +15,21 @@ def run_dupes(repo: str, ignore: set[str] | None = None, include_empty: bool = F
 
     conn = init_db(db_path)
     try:
-        dupes = get_dupes(conn, include_empty)
-    
+        duplicate_hash_counts = hash_dupes(conn, include_empty)
         if verbose:
-            print(f"Found {len(dupes)} duplicate files")
-        
+            print(f"Found {len(duplicate_hash_counts)} duplicate hash(es)")
+
+        duplicate_files_by_hash = {
+            h: filepaths_by_hash(conn, h)
+            for h, _count in duplicate_hash_counts
+        }
+
     except Exception as e:
         print(e)
         raise
     finally:
         conn.close()
 
-    return dupes
+    return duplicate_files_by_hash
 
 

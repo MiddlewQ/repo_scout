@@ -56,20 +56,21 @@ def insert_node(
     hash: str | None = None, 
     size_bytes: int | None = None
 ) -> None:
+    sql = """
+    INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run, deleted) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+    ON CONFLICT(path) DO UPDATE SET
+        parent_path   = excluded.parent_path,
+        kind          = excluded.kind,
+        file_type     = excluded.file_type,
+        size_bytes    = excluded.size_bytes,
+        hash          = excluded.hash,
+        last_modified = excluded.last_modified,
+        last_seen_run = excluded.last_seen_run,
+        deleted       = 0
+    """
     conn.execute(
-        """
-        INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run, deleted) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
-        ON CONFLICT(path) DO UPDATE SET
-            parent_path   = excluded.parent_path,
-            kind          = excluded.kind,
-            file_type     = excluded.file_type,
-            size_bytes    = excluded.size_bytes,
-            hash          = excluded.hash,
-            last_modified = excluded.last_modified,
-            last_seen_run = excluded.last_seen_run,
-            deleted       = 0
-        """,
+        sql,
         (path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run)
     )
 
@@ -115,7 +116,7 @@ def clear_nodes(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM nodes")
     return conn.execute("SELECT changes()").fetchone()[0]
     
-def get_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
+def hash_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
     sql = """
     SELECT hash, 
            COUNT(*) AS c 
@@ -135,3 +136,11 @@ def get_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
 
     return conn.execute(sql).fetchall()
 
+def filepaths_by_hash(conn: sqlite3.Connection, hash: str) -> list:
+    sql = """
+    SELECT path
+    FROM nodes
+    WHERE hash = ?
+    """
+
+    return [row[0] for row in conn.execute(sql, (hash,)).fetchall()]
