@@ -9,9 +9,11 @@ def main():
         parser.print_help()
         raise SystemExit(0)
 
+    if args.debug:
+        print(args)
+
     if args.verbose:
         print(f"Running {args.command}")
-        print(args)
     args.func(args)
 
 if __name__ == "__main__":
