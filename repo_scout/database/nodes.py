@@ -89,7 +89,7 @@ def file_by_scan(conn: sqlite3.Connection, scan_id: int) -> list:
 def file_by_dir(conn: sqlite3.Connection, path: str) -> list:
     return conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
 
-def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str] = set()):
+def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str] | None = None):
     sql = """
     SELECT *
     FROM nodes
@@ -100,13 +100,32 @@ def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str
     params: list[object] = ["file"]
     
     if ignore:
-        placeholders = ",".join(["?" * len(ignore)])
-        sql += f" AND path NOT IN ({placeholders})"
-        params.extend(sorted(ignore))
+        for path in sorted(ignore):
+            item = path.strip()
+
+            if item.startswith("./"):
+                item = item[2:]
+
+            if not item:
+                continue
+
+            if item.endswith("/"): # Ignore directory
+                dir = item.rstrip("/")
+                sql += "  AND path NOT LIKE ? AND path NOT LIKE ?\n    "
+                params.append(f"{dir}/%")
+                params.append(f"%/{dir}/%")
+            elif "/" in item: # Ignore path
+                sql += "  AND path != ? AND path NOT LIKE ?\n    "
+                params.append(f"%{item}")
+                params.append(f"%/{item}")
+            else: # Ignore file
+                sql += "  AND NOT (path = ? OR path LIKE ?)\n    "
+                params.append(f"{item}")
+                params.append(f"%/{item}")
+            
 
     sql += "ORDER BY size_bytes DESC LIMIT ?"
     params.append(file_count)
-    
     return conn.execute(sql, params).fetchall()
 
 def max_depth(conn: sqlite3.Connection):

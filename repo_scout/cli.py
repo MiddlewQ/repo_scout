@@ -45,7 +45,7 @@ def handle_scan(args):
     )
 def add_largest_subcommand(subparsers):
     p = subparsers.add_parser("largest", help="Gives information about the largest file in the filesystem")
-    p.add_argument("-I", "--ignore", type=lambda s: s.split("|"), default=[], help='List of files ignored. Example use: --ignore "file1.txt|file2|file3"')
+    p.add_argument("-I", "--ignore", nargs="+", default=[], metavar="PATTERN", help="Skip paths. Examples: cli.py utils/ pkg/__init__.py")
     p.add_argument("-n", "--limit", type=int, default=5, help="Limit number of files return, default: 5")
     p.add_argument("--json", action="store_true", help="Output Json instead or readable format")
     p.set_defaults(func=handle_largest)
