@@ -1,4 +1,4 @@
-import os, pathspec
+import os
 
 def find_repo_root(curr_dir: str | None = None) -> str | None:
     curr_dir = os.path.abspath(curr_dir or os.getcwd())
