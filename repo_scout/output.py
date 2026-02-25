@@ -1,35 +1,39 @@
 from typing import Any
 
+def format_largest(files: list) -> None:
+    # files: [(path, size_bytes), ...] sorted desc
+    if not files:
+        print("No files found.")
+        return
 
-def format_largest(files: list):
-    rank_width = 4
-    size_width = 8
-    path_width = 40
-    line_width = rank_width + 1 + size_width + path_width
-
-    print("=" * line_width)
-    print(f"{'Rank':>{rank_width}} {'Size':>{size_width}}   Path")
-    print("=" * line_width)
-
-    for i, file in enumerate(files):
-        kb = int(file[5]) / 1000
+    for i, file in enumerate(files, start=1):
         path = file[0]
-        size_str = f"{kb:.2f} KB"
+        size_bytes = file[5]
+        kib = size_bytes / 1024
+        mib = kib / 1024
+        if mib >= 1:
+            size_str = f"{mib:.2f} MiB"
+        elif kib >= 1:
+            size_str = f"{kib:.1f} KiB"
+        else:
+            size_str = f"{size_bytes} B"
 
-        print(f"{i+1:>{rank_width}} {size_str:>{size_width}}   {path}")
+        print(f"[{i}] {size_str}  {path}")
 
-def format_dupes(duplicate_hashes: list):
-    if not duplicate_hashes:
+def format_dupes(duplicate_files_by_hash):
+    if not duplicate_files_by_hash:
         print("No duplicate files found.")
         return
 
-    count_width = 5
-    hash_width = 64
-    line_width = count_width + 1 + hash_width
+    items = sorted(
+        duplicate_files_by_hash.items(),
+        key=lambda kv: (-len(kv[1]), kv[0]),
+    )
 
-    print("=" * line_width)
-    print(f"{'Count':>{count_width}} {'Hash':<{hash_width}}")
-    print("=" * line_width)
-
-    for file_hash, count in duplicate_hashes:
-        print(f"{count:>{count_width}} {file_hash:<{hash_width}}")
+    for i, (file_hash, paths) in enumerate(items, start=1):
+        count = len(paths)
+        print(f"[{i}] {count} files share hash {file_hash}")
+        for path in paths:
+            print(f"  - {path}")
+        if i != len(items):
+            print()  # blank line between groups
