@@ -15,7 +15,7 @@ def run_dupes(repo: str, ignore: set[str] | None = None, include_empty: bool = F
 
     conn = init_db(db_path)
     try:
-        duplicate_hash_counts = hash_dupes(conn, include_empty)
+        duplicate_hash_counts = hash_dupes(conn, ignore, include_empty)
         if verbose:
             print(f"Found {len(duplicate_hash_counts)} duplicate hash(es)")
 

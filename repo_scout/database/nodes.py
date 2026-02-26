@@ -100,28 +100,10 @@ def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str
     params: list[object] = ["file"]
     
     if ignore:
-        for path in sorted(ignore):
-            item = path.strip()
+        ignore_sql, ignore_params = build_ignore_filter(ignore)
+        sql += ignore_sql
+        params.extend(ignore_params)
 
-            if item.startswith("./"):
-                item = item[2:]
-
-            if not item:
-                continue
-
-            if item.endswith("/"): # Ignore directory
-                dir = item.rstrip("/")
-                sql += "  AND path NOT LIKE ? AND path NOT LIKE ?\n    "
-                params.append(f"{dir}/%")
-                params.append(f"%/{dir}/%")
-            elif "/" in item: # Ignore path
-                sql += "  AND path != ? AND path NOT LIKE ?\n    "
-                params.append(f"%{item}")
-                params.append(f"%/{item}")
-            else: # Ignore file
-                sql += "  AND NOT (path = ? OR path LIKE ?)\n    "
-                params.append(f"{item}")
-                params.append(f"%/{item}")
             
 
     sql += "ORDER BY size_bytes DESC LIMIT ?"
@@ -135,7 +117,11 @@ def clear_nodes(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM nodes")
     return conn.execute("SELECT changes()").fetchone()[0]
     
-def hash_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
+def hash_dupes(
+    conn: sqlite3.Connection, 
+    ignore: set | None = None, 
+    include_empty: bool = False
+) -> list:
     sql = """
     SELECT hash, 
            COUNT(*) AS c 
@@ -143,8 +129,15 @@ def hash_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
     WHERE kind='file'
     """
 
+    params: list[object] = []
+
+    if ignore:
+        sql_ignore, params_ignore = build_ignore_filter(ignore)
+        sql += "\n" + sql_ignore
+        params.extend(params_ignore)
+
     if not include_empty:
-        sql += " AND size_bytes <> 0 "
+        sql += "  AND size_bytes <> 0 "
 
     sql += """
       AND deleted=0 
@@ -153,7 +146,7 @@ def hash_dupes(conn: sqlite3.Connection, include_empty: bool = False) -> list:
     HAVING c > 1;
     """
 
-    return conn.execute(sql).fetchall()
+    return conn.execute(sql, params).fetchall()
 
 def filepaths_by_hash(conn: sqlite3.Connection, hash: str) -> list:
     sql = """
@@ -163,3 +156,32 @@ def filepaths_by_hash(conn: sqlite3.Connection, hash: str) -> list:
     """
 
     return [row[0] for row in conn.execute(sql, (hash,)).fetchall()]
+
+
+def build_ignore_filter(ignore):
+    sql = ""
+    params = []
+    for raw in sorted(ignore):
+        item = raw.strip()
+
+        if item.startswith("./"):
+            item = item[2:]
+        item = item.lstrip("/") 
+
+        if not item:
+            continue
+
+        if item.endswith("/"): # Ignore directory
+            dir = item.rstrip("/")
+            sql += "  AND path NOT LIKE ? AND path NOT LIKE ?\n    "
+            params.append(f"{dir}/%")
+            params.append(f"%/{dir}/%")
+        elif "/" in item: # Ignore path
+            sql += "  AND path != ? AND path NOT LIKE ?\n    "
+            params.append(f"%{item}")
+            params.append(f"%/{item}")
+        else: # Ignore file
+            sql += "  AND NOT (path = ? OR path LIKE ?)\n    "
+            params.append(f"{item}")
+            params.append(f"%/{item}")
+    return sql, params

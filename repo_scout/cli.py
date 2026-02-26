@@ -69,7 +69,7 @@ def add_changed_subcommand(subparsers):
 
 def add_dupes_subcommand(subparsers):
     p = subparsers.add_parser("dupes", help="Gives information about which files share duplicate hashes")
-    p.add_argument("--ignore", type=lambda s: s.split("|"), default=[])
+    p.add_argument("-I", "--ignore", nargs="+", default=[], metavar="PATTERN", help="Skip paths. Examples: cli.py utils/ pkg/__init__.py")
     p.add_argument("--include-empty", action="store_true")
     p.set_defaults(func=handle_dupes)
 
