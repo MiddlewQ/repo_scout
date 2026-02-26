@@ -7,10 +7,10 @@ wheels/
 *.egg-info
 
 # Project environment
-.repo_scout
+.repo_scout/
 
 # Virtual environments
-.venv
+.venv/
 
 # Database
 nodes.db
