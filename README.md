@@ -20,6 +20,6 @@ File duplicates are detected using a full content hash (SHA-256).
 
 ## Roadmap
 
-1. Easier to run to from anywhere
-2. More commands 
-3. More output formats
+- Make the CLI easier to run from anywhere (installable `repo-scout` command)
+- Add more analysis commands (e.g. `changed`, `stats`, `search`)
+- Add more output formats (e.g. JSON/CSV)
