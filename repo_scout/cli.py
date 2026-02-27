@@ -6,6 +6,7 @@ from .commands.scan import run_scan
 from .commands.largest import run_largest
 from .commands.clear import run_clear
 from .commands.dupes import run_dupes
+from .commands.changed import run_changed
 from .output import format_largest, format_dupes
 
 def ensure_repo_scout_dir(repo_root: str) -> str:
@@ -63,9 +64,17 @@ def handle_largest(args):
     format_largest(files)
 
 def add_changed_subcommand(subparsers):
-    p = subparsers.add_parser("changed", help="Tell you which files have changed since the last scan")
-    p.add_argument("--ignore", type=lambda s: s.split("|"))
+    p = subparsers.add_parser("changed", help="Scans repository, compares to previous state and gives information about which files have been created, updated or removed.")
+    p.add_argument("-I", "--ignore", nargs="+", default=[], metavar="PATTERN", help="Skip paths. Examples: cli.py utils/ pkg/__init__.py")
+
     # p.set_defaults(func=)
+
+def handle_changed(args):
+    created, modified, deleted = run_changed(
+        repo=args.repo, 
+        ignore=set(args.ignore),
+        verbose=args.verbose
+    )
 
 def add_dupes_subcommand(subparsers):
     p = subparsers.add_parser("dupes", help="Gives information about which files share duplicate hashes")
