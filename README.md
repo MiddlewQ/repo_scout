@@ -18,7 +18,7 @@ It stores an index database at .repo_scout/index.sqlite inside the repo.
 
 File duplicates are detected using a full content hash (SHA-256).
 
-## Roadmap
+## Future plans
 
 - Make the CLI easier to run from anywhere (installable `repo-scout` command)
 - Add more analysis commands (e.g. `changed`, `stats`, `search`)
