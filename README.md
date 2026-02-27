@@ -23,3 +23,8 @@ File duplicates are detected using a full content hash (SHA-256).
 - Make the CLI easier to run from anywhere (installable `repo-scout` command)
 - Add more analysis commands (e.g. `changed`, `stats`, `search`)
 - Add more output formats (e.g. JSON/CSV)
+
+### Not planned (yet)
+
+- Main program entry points & Dependencies analysis
+- AI structure and file analysis 
