@@ -1,4 +1,4 @@
-from repo_scout.database.nodes import FileNode
+from repo_scout.database.nodes import Node, FileNode
 
 from typing import Any
 def format_largest(files: list[FileNode]) -> None:
@@ -38,3 +38,8 @@ def format_dupes(duplicate_files_by_hash):
             print(f"  - {path}")
         if i != len(items):
             print()  # blank line between groups
+
+
+def format_changed(created: list[Node], modified: list[Node], deleted: list[Node]):
+    pass
+
