@@ -1,14 +1,15 @@
-from typing import Any
+from repo_scout.database.nodes import FileNode
 
-def format_largest(files: list) -> None:
+from typing import Any
+def format_largest(files: list[FileNode]) -> None:
     # files: [(path, size_bytes), ...] sorted desc
     if not files:
         print("No files found.")
         return
 
     for i, file in enumerate(files, start=1):
-        path = file[0]
-        size_bytes = file[5]
+        path = file.path
+        size_bytes = file.size_bytes
         kib = size_bytes / 1024
         mib = kib / 1024
         if mib >= 1:

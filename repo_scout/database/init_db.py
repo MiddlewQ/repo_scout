@@ -15,6 +15,7 @@ def init_db(db_path: str = ":memory:", schema_dir: str = "./schema") -> sqlite3.
         raise FileNotFoundError(f"No .sql files found in {schema_dir}")
     
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     with conn:
         for path in sql_files:

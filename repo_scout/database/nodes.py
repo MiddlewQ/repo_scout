@@ -1,7 +1,78 @@
 import sqlite3
+from dataclasses import dataclass
+
+@dataclass(frozen=True, slots=True)
+class Node:
+    path: str
+    parent_path: str
+    kind: str
+    
+    hash: str | None
+    file_type: str | None
+    size_bytes: int | None
+    last_modified: float
+    
+    deleted: bool
+    last_seen_run: int
 
 
-def walk_and_insert(conn: sqlite3.Connection, filesystem: dict, scan_id: int, parent_path: str | None = None):        
+def row_to_node(row: sqlite3.Row) -> Node:
+    return Node(
+        path=row["path"],
+        parent_path=row["parent_path"],
+        kind=row["kind"],
+
+        hash=row["hash"],
+        file_type=row["file_type"],
+        size_bytes=row["size_bytes"],
+        last_modified=row["last_modified"],
+
+        deleted=row["deleted"],
+        last_seen_run=row["last_seen_run"]
+    )
+
+@dataclass(frozen=True)
+class FileNode:
+    path: str
+    parent_path: str
+
+    hash: str
+    size_bytes: int
+    file_type: str | None
+    last_modified: float
+    
+    deleted: bool 
+    last_seen_run: int
+
+def row_to_filenode(row: sqlite3.Row) -> FileNode:
+    return FileNode(
+        path=row["path"],
+        parent_path=row["parent_path"],
+        
+        hash=row["hash"],
+        file_type=row["file_type"],
+        size_bytes=row["size_bytes"],
+        last_modified=row["last_modified"],
+
+        deleted=row["deleted"],
+        last_seen_run=row["last_seen_run"]
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class HashDupe:
+    hash: str
+    count: int
+
+def row_to_hash_dupe(row: sqlite3.Row) -> HashDupe:
+    return HashDupe(hash=row["hash"], count=row["c"])
+
+def walk_and_insert(
+    conn: sqlite3.Connection, 
+    filesystem: dict, 
+    scan_id: int, 
+    parent_path: str | None = None
+) -> None:        
     for name, node in filesystem.items():
         if name == "__error__":
             continue
@@ -33,7 +104,12 @@ def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
     conn.execute(statement, (scan_id, ))
 
 
-def node_unchanged(conn: sqlite3.Connection, path: str, size_bytes: int, last_modified: float) -> bool:
+def node_unchanged(
+    conn: sqlite3.Connection, 
+    path: str, 
+    size_bytes: int, 
+    last_modified: float
+) -> bool:
     statement = """
     SELECT 1
     FROM nodes
@@ -74,24 +150,35 @@ def insert_node(
         (path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run)
     )
 
-def nodes(conn: sqlite3.Connection):
-    return conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
+def nodes(conn: sqlite3.Connection) -> list[Node]:
+    rows = conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
+    return [row_to_node(row) for row in rows]
 
-def file_count(conn: sqlite3.Connection):
+def file_count(conn: sqlite3.Connection) -> int:
     return conn.execute('SELECT COUNT(*) FROM nodes WHERE kind = "file"').fetchone()[0]
 
-def file_by_scan(conn: sqlite3.Connection, scan_id: int) -> list:
-    return conn.execute(
+def file_by_scan(
+    conn: sqlite3.Connection, 
+    scan_id: int
+) -> list[Node]:
+    rows = conn.execute(
         "SELECT * FROM nodes WHERE last_seen_id = ?", 
         (scan_id, )
     ).fetchall()
+    return [row_to_node(row) for row in rows]
 
-def file_by_dir(conn: sqlite3.Connection, path: str) -> list:
-    return conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
 
-def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str] | None = None):
+def file_by_dir(conn: sqlite3.Connection, path: str) -> list[Node]:
+    rows = conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
+    return [row_to_node(row) for row in rows]
+
+def largest_files(
+    conn: sqlite3.Connection, 
+    file_count: int = 5, 
+    ignore: set[str] | None = None
+) -> list[FileNode]:
     sql = """
-    SELECT *
+    SELECT path, size_bytes
     FROM nodes
     WHERE kind = ?
       AND deleted = 0 
@@ -104,11 +191,10 @@ def largest_files(conn: sqlite3.Connection, file_count: int = 5, ignore: set[str
         sql += ignore_sql
         params.extend(ignore_params)
 
-            
-
     sql += "ORDER BY size_bytes DESC LIMIT ?"
     params.append(file_count)
-    return conn.execute(sql, params).fetchall()
+    rows = conn.execute(sql, params).fetchall()
+    return [row_to_filenode(row) for row in rows]
 
 def max_depth(conn: sqlite3.Connection):
     return 1
@@ -121,7 +207,7 @@ def hash_dupes(
     conn: sqlite3.Connection, 
     ignore: set | None = None, 
     include_empty: bool = False
-) -> list:
+) -> list[HashDupe]:
     sql = """
     SELECT hash, 
            COUNT(*) AS c 
@@ -146,19 +232,25 @@ def hash_dupes(
     HAVING c > 1;
     """
 
-    return conn.execute(sql, params).fetchall()
+    rows = conn.execute(sql, params).fetchall()
+    return [row_to_hash_dupe(row) for row in rows]
 
-def filepaths_by_hash(conn: sqlite3.Connection, hash: str) -> list:
+def filepaths_by_hash(
+    conn: sqlite3.Connection, 
+    hash: str
+) -> list[str]:
     sql = """
     SELECT path
     FROM nodes
     WHERE hash = ?
     """
 
-    return [row[0] for row in conn.execute(sql, (hash,)).fetchall()]
+    return [row["path"] for row in conn.execute(sql, (hash,)).fetchall()]
 
 
-def build_ignore_filter(ignore):
+def build_ignore_filter(
+    ignore: set[str]
+) -> tuple[str, list[str]]:
     sql = ""
     params = []
     for raw in sorted(ignore):
