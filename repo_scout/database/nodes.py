@@ -58,6 +58,26 @@ def row_to_filenode(row: sqlite3.Row) -> FileNode:
         last_seen_run=row["last_seen_run"]
     )
 
+@dataclass(frozen=True)
+class ModifiedFileNode:
+    path: str
+    old_size: int
+    new_size: int
+    old_hash: str
+    new_hash: str
+    old_mtime: float
+    new_mtime: float
+
+def row_to_modified_filenode(old_row: sqlite3.Row, new_row: sqlite3.Row):
+    return ModifiedFileNode(
+        path=new_row["path"],
+        old_size=old_row["size_bytes"],
+        new_size=new_row["size_bytes"],
+        old_hash=old_row["hash"],
+        new_hash=new_row["hash"],
+        old_mtime=old_row["last_modified"],
+        new_mtime=new_row["last_modified"]
+    )
 
 @dataclass(frozen=True, slots=True)
 class HashDupe:
@@ -72,11 +92,12 @@ def walk_and_insert(
     filesystem: dict, 
     scan_id: int, 
     parent_path: str | None = None
-) -> None:        
+) -> None:
     for name, node in filesystem.items():
         if name == "__error__":
             continue
-
+        
+        
         insert_node (
             conn=conn,
             path=node["path"],
@@ -93,6 +114,8 @@ def walk_and_insert(
                             filesystem=node.get("children", {}), 
                             parent_path=node["path"], 
                             scan_id=scan_id)
+
+
 
 def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
     statement = """
