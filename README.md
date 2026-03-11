@@ -27,4 +27,4 @@ File duplicates are detected using a full content hash (SHA-256).
 ### Not planned (yet)
 
 - Main program entry points & Dependencies analysis
-- AI structure and file analysis 
+- AI file and project structure analysis
