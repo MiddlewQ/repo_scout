@@ -1,21 +1,23 @@
 from repo_scout.repo_root import *
 from repo_scout.database.init_db import init_db
-from repo_scout.database.nodes import walk_and_insert, file_count, mark_unseen_nodes_deleted
+from repo_scout.database.nodes import file_count, insert_node, mark_unseen_nodes_deleted
 from repo_scout.database.scan_runs import begin_scan_run
-from repo_scout.scan.scan_repo import fs_tree
+from repo_scout.scan.scan_repo import walk_repo, scannode_to_node
 
 def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: bool) -> int:
     repo_root = resolve_repo_root(repo)
     if verbose:
         print(f"Repo root: {repo_root}")
 
-    filesystem = fs_tree(repo_root, ignore, depth)
+    nodes = walk_repo(repo_root, repo_root, ignore, depth)
 
     db_path = db_path_to_root(repo_root)
     conn = init_db(db_path)
     try: 
         scan_id = begin_scan_run(conn)
-        walk_and_insert(conn, filesystem, scan_id)
+        for node in nodes:
+            node = scannode_to_node(node, scan_id)
+            insert_node(conn, node)
         mark_unseen_nodes_deleted(conn, scan_id)
 
         if verbose:

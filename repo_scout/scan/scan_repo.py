@@ -1,69 +1,57 @@
 import os
-from typing import Any
+from typing import Iterator, Literal
 
-from .scan_node import create_dir_info, create_file_info
+from repo_scout.database.model import Node
+from .model import ScanNode, os_entry_to_scannode
 from .config import *
 
-def fs_tree(root: str = ".",
-            ignore: set[str] | None=None,
-            depth: int | None = None):
+def walk_repo(
+    repo_root: str,
+    curr_dir: str,
+    ignore: set[str] | None,
+    depth: int | None = None
+) -> Iterator[ScanNode]:
+    if depth is not None and depth <= 0:
+        return
+
     if ignore is None:
         ignore = set(DEFAULT_IGNORE_NAMES)
     else:
         ignore |= DEFAULT_IGNORE_NAMES
-    
-    filesystem = fs_tree_helper(root, root, ignore, depth)
-    return filesystem
-    
 
-def fs_tree_helper(curr: str,
-            root: str,
-            ignore: set[str],
-            depth: int | None):
-    out: dict[str, Any] = {}
+    yield from walk_repo_helper(repo_root, repo_root, ignore, depth)    
+
+
+def walk_repo_helper(
+    repo_root: str,
+    curr_dir: str,
+    ignore: set[str],
+    depth: int | None 
+) -> Iterator[ScanNode]:
     if depth is not None and depth <= 0:
-        return out
-    try:
-        with os.scandir(curr) as it:
-            for entry in it:
-                name = entry.name
-                if name in ignore:
-                    continue
-                if entry.is_dir(follow_symlinks=False):
-                    out[name] = create_dir_info(entry, root)
-                    next_depth = None if depth is None else depth - 1
-                    out[name]["children"] = fs_tree_helper(entry.path, root, ignore, next_depth)
-                elif entry.is_file(follow_symlinks=False):
-                    out[name] = create_file_info(entry, root)
-    except OSError as e:
-        out["__error__"] = f"{type(e).__name__}: {e}"
-    return out
+        return
 
-# def fs_read(filepath: str, max_chars = 2000) -> dict[str, Any]:
-#     try:
-#         with open(filepath, mode="r", encoding="utf-8") as f:
-#             content = f.read(max_chars)
-#             truncated = f.read(1) != ""
-#             meta = {
-#                 "truncated": truncated,
-#                 "max_chars": max_chars
-#             }
-#     except OSError as e:
-#         return response_error(error_type=f'{e}')
+    with os.scandir(curr_dir) as entries:
+        for entry in entries:
+            if entry.name in ignore:
+                continue
+            node  = os_entry_to_scannode(entry, repo_root)
+            yield node
 
-#     return c
+            if entry.is_dir(follow_symlinks=False):
+                next_depth = None if depth is None else depth - 1
+                yield from walk_repo_helper(repo_root, entry.path, ignore, next_depth)
 
-# def fs_read_help(filepath: str, max_chars = 2000):
-#     try:
-#         with open(filepath, mode="r", encoding="utf-8") as f:
-#             content = f.read(max_chars)
-#             truncated = f.read(1) != ""
-#             meta = {
-#                 "truncated": truncated,
-#                 "max_chars": max_chars
-#             }
-#             return {"content": content}
-#     except OSError as e:
-#         pass
+def scannode_to_node(scan_node: ScanNode, scan_id: int) -> Node:
+    return Node(
+        path=scan_node.path,
+        parent_path=scan_node.parent_path if scan_node.parent_path is not None else "",
+        kind=scan_node.kind,
+        hash_content=scan_node.content_hash,
+        file_type=scan_node.file_type,
+        size_bytes=scan_node.size_bytes,
+        last_modified=scan_node.last_modified if scan_node.last_modified is not None else 0.0,
+        deleted=False,
+        last_seen_run=scan_id
+    )
 
-#     pass

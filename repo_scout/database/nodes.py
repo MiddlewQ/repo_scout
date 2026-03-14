@@ -1,121 +1,7 @@
 import sqlite3
 from dataclasses import dataclass
 
-@dataclass(frozen=True, slots=True)
-class Node:
-    path: str
-    parent_path: str
-    kind: str
-    
-    hash: str | None
-    file_type: str | None
-    size_bytes: int | None
-    last_modified: float
-    
-    deleted: bool
-    last_seen_run: int
-
-
-def row_to_node(row: sqlite3.Row) -> Node:
-    return Node(
-        path=row["path"],
-        parent_path=row["parent_path"],
-        kind=row["kind"],
-
-        hash=row["hash"],
-        file_type=row["file_type"],
-        size_bytes=row["size_bytes"],
-        last_modified=row["last_modified"],
-
-        deleted=row["deleted"],
-        last_seen_run=row["last_seen_run"]
-    )
-
-@dataclass(frozen=True)
-class FileNode:
-    path: str
-    parent_path: str
-
-    hash: str
-    size_bytes: int
-    file_type: str | None
-    last_modified: float
-    
-    deleted: bool 
-    last_seen_run: int
-
-def row_to_filenode(row: sqlite3.Row) -> FileNode:
-    return FileNode(
-        path=row["path"],
-        parent_path=row["parent_path"],
-        
-        hash=row["hash"],
-        file_type=row["file_type"],
-        size_bytes=row["size_bytes"],
-        last_modified=row["last_modified"],
-
-        deleted=row["deleted"],
-        last_seen_run=row["last_seen_run"]
-    )
-
-@dataclass(frozen=True)
-class ModifiedFileNode:
-    path: str
-    old_size: int
-    new_size: int
-    old_hash: str
-    new_hash: str
-    old_mtime: float
-    new_mtime: float
-
-def row_to_modified_filenode(old_row: sqlite3.Row, new_row: sqlite3.Row):
-    return ModifiedFileNode(
-        path=new_row["path"],
-        old_size=old_row["size_bytes"],
-        new_size=new_row["size_bytes"],
-        old_hash=old_row["hash"],
-        new_hash=new_row["hash"],
-        old_mtime=old_row["last_modified"],
-        new_mtime=new_row["last_modified"]
-    )
-
-@dataclass(frozen=True, slots=True)
-class HashDupe:
-    hash: str
-    count: int
-
-def row_to_hash_dupe(row: sqlite3.Row) -> HashDupe:
-    return HashDupe(hash=row["hash"], count=row["c"])
-
-def walk_and_insert(
-    conn: sqlite3.Connection, 
-    filesystem: dict, 
-    scan_id: int, 
-    parent_path: str | None = None
-) -> None:
-    for name, node in filesystem.items():
-        if name == "__error__":
-            continue
-        
-        
-        insert_node (
-            conn=conn,
-            path=node["path"],
-            parent_path=parent_path,
-            kind=node["kind"],
-            file_type=node["file_type"],
-            last_modified=node["last_modified"],
-            last_seen_run=scan_id,
-            hash=node["hash"],
-            size_bytes=node["size_bytes"],
-        )
-        if node["kind"] == "dir":
-            walk_and_insert(conn=conn, 
-                            filesystem=node.get("children", {}), 
-                            parent_path=node["path"], 
-                            scan_id=scan_id)
-
-
+from .model import *
 
 def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
     statement = """
@@ -125,7 +11,6 @@ def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
       AND last_seen_run <> ?
     """
     conn.execute(statement, (scan_id, ))
-
 
 def node_unchanged(
     conn: sqlite3.Connection, 
@@ -146,14 +31,7 @@ def node_unchanged(
 
 def insert_node(
     conn: sqlite3.Connection, 
-    path: str, 
-    parent_path: str | None, 
-    kind: str, 
-    file_type: str | None, 
-    last_modified: float | None, 
-    last_seen_run: int, 
-    hash: str | None = None, 
-    size_bytes: int | None = None
+    node: Node
 ) -> None:
     sql = """
     INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run, deleted) 
@@ -170,8 +48,9 @@ def insert_node(
     """
     conn.execute(
         sql,
-        (path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run)
+        (node.path, node.parent_path, node.kind, node.file_type, node.size_bytes, node.hash_content, node.last_modified, node.last_seen_run)
     )
+
 
 def nodes(conn: sqlite3.Connection) -> list[Node]:
     rows = conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
