@@ -80,7 +80,7 @@ def largest_files(
     ignore: set[str] | None = None
 ) -> list[FileNode]:
     sql = """
-    SELECT path, size_bytes
+    SELECT path, parent_path, hash, size_bytes, file_type, last_modified, deleted, last_seen_run
     FROM nodes
     WHERE kind = ?
       AND deleted = 0 
