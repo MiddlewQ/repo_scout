@@ -1,6 +1,6 @@
 import hashlib
 
-def hash_file_content(filepath, chunk_size = 1000):
+def hash_file_content(filepath, chunk_size = 1000) -> str | None:
     h = hashlib.sha256()
     try:
         with open(filepath, mode="rb") as f:
@@ -8,5 +8,5 @@ def hash_file_content(filepath, chunk_size = 1000):
                 h.update(chunk)
         return h.hexdigest()
     except OSError as e:
-        
+        print(f"error: {e}")
         return None
