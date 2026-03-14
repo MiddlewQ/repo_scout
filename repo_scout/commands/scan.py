@@ -9,7 +9,7 @@ def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: 
     if verbose:
         print(f"Repo root: {repo_root}")
 
-    nodes = walk_repo(repo_root, repo_root, ignore, depth)
+    nodes = walk_repo(repo_root, ignore, depth)
 
     db_path = db_path_to_root(repo_root)
     conn = init_db(db_path)

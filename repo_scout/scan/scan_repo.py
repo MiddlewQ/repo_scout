@@ -7,7 +7,6 @@ from .config import *
 
 def walk_repo(
     repo_root: str,
-    curr_dir: str,
     ignore: set[str] | None,
     depth: int | None = None
 ) -> Iterator[ScanNode]:
