@@ -5,7 +5,6 @@ from typing import Literal
 from .file_type import detect_file_type
 from .hash import hash_file_content
 
-from repo_scout.database.model import Node
 
 @dataclass(frozen=True, slots=True)
 class ScanNode:
