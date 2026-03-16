@@ -1,6 +1,6 @@
 from repo_scout.repo_root import *
 from repo_scout.database.init_db import init_db
-from repo_scout.database.nodes import file_count, insert_node, mark_unseen_nodes_deleted
+from repo_scout.database.nodes import file_count, insert_or_update_node, mark_unseen_nodes_deleted
 from repo_scout.database.scan_runs import begin_scan_run
 from repo_scout.scan.scan_repo import walk_repo, scannode_to_node
 
@@ -17,7 +17,7 @@ def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: 
         scan_id = begin_scan_run(conn)
         for node in nodes:
             node = scannode_to_node(node, scan_id)
-            insert_node(conn, node)
+            insert_or_update_node(conn, node)
         mark_unseen_nodes_deleted(conn, scan_id)
 
         if verbose:
