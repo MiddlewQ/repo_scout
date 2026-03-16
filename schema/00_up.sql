@@ -8,12 +8,13 @@ CREATE TABLE IF NOT EXISTS nodes(
     parent_path TEXT,
     kind TEXT NOT NULL CHECK(kind in ("file", "dir")),
     
-    hash TEXT,
+    content_hash TEXT,
     file_type TEXT,
     size_bytes INTEGER,
     last_modified REAL NOT NULL,
 
     deleted INTEGER NOT NULL DEFAULT 0,
-    last_seen_run INTEGER NOT NULL REFERENCES scan_runs(id)
+    last_seen_run INTEGER NOT NULL REFERENCES scan_runs(id),
+    deleted_run INTEGER
 );
 

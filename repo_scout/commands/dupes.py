@@ -20,7 +20,7 @@ def run_dupes(repo: str, ignore: set[str] | None = None, include_empty: bool = F
             print(f"Found {len(duplicate_hash_counts)} duplicate hash(es)")
 
         duplicate_files_by_hash = {
-            d.hash: filepaths_by_hash(conn, d.hash)
+            d.hash_content: filepaths_by_hash(conn, d.hash_content)
             for d in duplicate_hash_counts
         }
 

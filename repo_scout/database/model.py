@@ -23,7 +23,7 @@ def row_to_node(row: sqlite3.Row) -> Node:
         parent_path=row["parent_path"],
         kind=row["kind"],
 
-        hash_content=row["hash"],
+        hash_content=row["content_hash"],
         file_type=row["file_type"],
         size_bytes=row["size_bytes"],
         last_modified=row["last_modified"],
@@ -50,7 +50,7 @@ def row_to_filenode(row: sqlite3.Row) -> FileNode:
         path=row["path"],
         parent_path=row["parent_path"],
         
-        hash=row["hash"],
+        hash=row["content_hash"],
         file_type=row["file_type"],
         size_bytes=row["size_bytes"],
         last_modified=row["last_modified"],
@@ -74,17 +74,17 @@ def row_to_modified_filenode(old_row: sqlite3.Row, new_row: sqlite3.Row):
         path=new_row["path"],
         old_size=old_row["size_bytes"],
         new_size=new_row["size_bytes"],
-        old_hash=old_row["hash"],
-        new_hash=new_row["hash"],
+        old_hash=old_row["content_hash"],
+        new_hash=new_row["content_hash"],
         old_mtime=old_row["last_modified"],
         new_mtime=new_row["last_modified"]
     )
 
 @dataclass(frozen=True, slots=True)
 class HashDupe:
-    hash: str
+    hash_content: str
     count: int
 
 def row_to_hash_dupe(row: sqlite3.Row) -> HashDupe:
-    return HashDupe(hash=row["hash"], count=row["c"])
+    return HashDupe(hash_content=row["content_hash"], count=row["c"])
 

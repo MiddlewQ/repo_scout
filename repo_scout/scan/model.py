@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from .file_type import detect_file_type
-from .hash import hash_file_content
+from .hash_content import hash_file_content
 
 
 @dataclass(frozen=True, slots=True)

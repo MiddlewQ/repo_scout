@@ -8,7 +8,7 @@ def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
     UPDATE nodes 
     SET deleted = 1 
     WHERE deleted = 0 
-      AND last_seen_run <> ?
+      AND last_seen_run != ?
     """
     conn.execute(statement, (scan_id, ))
 
@@ -28,23 +28,33 @@ def node_unchanged(
     """
     return conn.execute(statement, (path, size_bytes, last_modified)).fetchone()[0] is not None
 
+def all_nodes(conn: sqlite3.Connection) -> list[Node]:
+    rows = conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
+    return [row_to_node(row) for row in rows]
 
-def insert_node(
+def node_by_path(conn: sqlite3.Connection, path: str) -> Node | None:
+    row = conn.execute("SELECT * FROM nodes WHERE path = ?", (path,)).fetchone()
+    if row is None:
+        return None
+    return row_to_node(row)
+
+def insert_or_update_node(
     conn: sqlite3.Connection, 
     node: Node
 ) -> None:
     sql = """
-    INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, hash, last_modified, last_seen_run, deleted) 
+    INSERT INTO nodes(path, parent_path, kind, file_type, size_bytes, content_hash, last_modified, last_seen_run, deleted) 
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
     ON CONFLICT(path) DO UPDATE SET
         parent_path   = excluded.parent_path,
         kind          = excluded.kind,
         file_type     = excluded.file_type,
         size_bytes    = excluded.size_bytes,
-        hash          = excluded.hash,
+        content_hash  = excluded.content_hash,
         last_modified = excluded.last_modified,
         last_seen_run = excluded.last_seen_run,
-        deleted       = 0
+        deleted       = 0,
+        deleted_run   = NULL
     """
     conn.execute(
         sql,
@@ -52,14 +62,10 @@ def insert_node(
     )
 
 
-def nodes(conn: sqlite3.Connection) -> list[Node]:
-    rows = conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
-    return [row_to_node(row) for row in rows]
-
 def file_count(conn: sqlite3.Connection) -> int:
     return conn.execute('SELECT COUNT(*) FROM nodes WHERE kind = "file"').fetchone()[0]
 
-def file_by_scan(
+def node_by_scan(
     conn: sqlite3.Connection, 
     scan_id: int
 ) -> list[Node]:
@@ -69,10 +75,9 @@ def file_by_scan(
     ).fetchall()
     return [row_to_node(row) for row in rows]
 
-
-def file_by_dir(conn: sqlite3.Connection, path: str) -> list[Node]:
-    rows = conn.execute('SELECT * FROM nodes WHERE parent_path = ? ORDER BY path', (path, )).fetchall()
-    return [row_to_node(row) for row in rows]
+def files_by_dir(conn: sqlite3.Connection, path: str) -> list[FileNode]:
+    rows = conn.execute('SELECT * FROM nodes WHERE kind = "file" AND parent_path = ? ORDER BY path', (path, )).fetchall()
+    return [row_to_filenode(row) for row in rows]
 
 def largest_files(
     conn: sqlite3.Connection, 
@@ -80,7 +85,7 @@ def largest_files(
     ignore: set[str] | None = None
 ) -> list[FileNode]:
     sql = """
-    SELECT path, parent_path, hash, size_bytes, file_type, last_modified, deleted, last_seen_run
+    SELECT path, parent_path, content_hash, size_bytes, file_type, last_modified, deleted, last_seen_run
     FROM nodes
     WHERE kind = ?
       AND deleted = 0 
@@ -111,7 +116,7 @@ def hash_dupes(
     include_empty: bool = False
 ) -> list[HashDupe]:
     sql = """
-    SELECT hash, 
+    SELECT content_hash, 
            COUNT(*) AS c 
     FROM nodes 
     WHERE kind='file'
@@ -129,8 +134,8 @@ def hash_dupes(
 
     sql += """
       AND deleted=0 
-      AND hash IS NOT NULL 
-    GROUP BY hash 
+      AND content_hash IS NOT NULL 
+    GROUP BY content_hash 
     HAVING c > 1;
     """
 
@@ -144,7 +149,7 @@ def filepaths_by_hash(
     sql = """
     SELECT path
     FROM nodes
-    WHERE hash = ?
+    WHERE content_hash = ?
     """
 
     return [row["path"] for row in conn.execute(sql, (hash,)).fetchall()]
