@@ -1,6 +1,6 @@
 import os, sqlite3
 
-def init_db(db_path: str = ":memory:", schema_dir: str = "./schema") -> sqlite3.Connection:
+def init_db(db_path: str = ":memory:", schema_dir: str = "./repo_scout/schema") -> sqlite3.Connection:
     if db_path != ":memory:":
         parent = os.path.dirname(db_path)
         os.makedirs(parent, exist_ok=True)
