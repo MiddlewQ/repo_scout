@@ -34,7 +34,7 @@ def walk_repo_helper(
         for entry in entries:
             if entry.name in ignore:
                 continue
-            node  = os_entry_to_scannode(entry, repo_root)
+            node  = os_entry_to_scannode(entry=entry, root=repo_root, hash_content=entry.is_file())
             yield node
 
             if entry.is_dir(follow_symlinks=False):
@@ -44,7 +44,7 @@ def walk_repo_helper(
 def scannode_to_node(scan_node: ScanNode, scan_id: int) -> Node:
     return Node(
         path=scan_node.path,
-        parent_path=scan_node.parent_path if scan_node.parent_path is not None else "",
+        parent_path=scan_node.parent_path if scan_node.parent_path is not None else ".",
         kind=scan_node.kind,
         hash_content=scan_node.content_hash,
         file_type=scan_node.file_type,
