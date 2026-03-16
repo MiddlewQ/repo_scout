@@ -22,12 +22,6 @@ def run_changed(
     depth: int | None = None,
     verbose: bool = False,
 ) -> ChangedResult:
-    result = ChangedResult(
-        baseline_created=False,
-        created=[],
-        modified=[],
-        deleted=[]
-    )
 
     repo_root = resolve_repo_root(repo)
 
