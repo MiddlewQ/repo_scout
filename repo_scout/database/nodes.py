@@ -1,32 +1,10 @@
 import sqlite3
-from dataclasses import dataclass
 
 from .model import *
 
-def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int):
-    statement = """
-    UPDATE nodes 
-    SET deleted = 1 
-    WHERE deleted = 0 
-      AND last_seen_run != ?
-    """
-    conn.execute(statement, (scan_id, ))
+def has_previous_scan(conn: sqlite3.Connection) -> bool:
+    return conn.execute("SELECT 1 FROM nodes LIMIT 1").fetchone() is not None
 
-def node_unchanged(
-    conn: sqlite3.Connection, 
-    path: str, 
-    size_bytes: int, 
-    last_modified: float
-) -> bool:
-    statement = """
-    SELECT 1
-    FROM nodes
-    WHERE path = ?
-      AND size_bytes = ?
-      AND last_modified = ?
-    LIMIT 1
-    """
-    return conn.execute(statement, (path, size_bytes, last_modified)).fetchone()[0] is not None
 
 def all_nodes(conn: sqlite3.Connection) -> list[Node]:
     rows = conn.execute("SELECT * FROM nodes ORDER BY path").fetchall()
@@ -61,11 +39,38 @@ def insert_or_update_node(
         (node.path, node.parent_path, node.kind, node.file_type, node.size_bytes, node.hash_content, node.last_modified, node.last_seen_run)
     )
 
+def mark_unseen_nodes_deleted(conn: sqlite3.Connection, scan_id: int) -> list[Node]:
+    statement = """
+    UPDATE nodes 
+    SET deleted = 1,
+        deleted_run = ?
+    WHERE deleted = 0 
+      AND last_seen_run != ?
+    RETURNING *
+    """
+    rows =  conn.execute(statement, (scan_id, scan_id)).fetchall()
+    return [row_to_node(row) for row in rows]
+
+def node_unchanged(
+    conn: sqlite3.Connection, 
+    path: str, 
+    size_bytes: int, 
+    last_modified: float
+) -> bool:
+    statement = """
+    SELECT 1
+    FROM nodes
+    WHERE path = ?
+      AND size_bytes = ?
+      AND last_modified = ?
+    LIMIT 1
+    """
+    return conn.execute(statement, (path, size_bytes, last_modified)).fetchone()[0] is not None
 
 def file_count(conn: sqlite3.Connection) -> int:
     return conn.execute('SELECT COUNT(*) FROM nodes WHERE kind = "file"').fetchone()[0]
 
-def node_by_scan(
+def nodes_by_scan(
     conn: sqlite3.Connection, 
     scan_id: int
 ) -> list[Node]:
@@ -103,8 +108,6 @@ def largest_files(
     rows = conn.execute(sql, params).fetchall()
     return [row_to_filenode(row) for row in rows]
 
-def max_depth(conn: sqlite3.Connection):
-    return 1
 
 def clear_nodes(conn: sqlite3.Connection) -> int:
     conn.execute("DELETE FROM nodes")

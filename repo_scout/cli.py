@@ -69,12 +69,13 @@ def add_changed_subcommand(subparsers):
     p.set_defaults(func=handle_changed)
 
 def handle_changed(args):
-    created, modified, deleted = run_changed(
+    result = run_changed(
         repo=args.repo, 
         ignore=set(args.ignore),
         verbose=args.verbose
     )
-    format_changed(created, modified, deleted)
+    format_changed(result)
+
 
 def add_dupes_subcommand(subparsers):
     p = subparsers.add_parser("dupes", help="Gives information about which files share duplicate hashes")
