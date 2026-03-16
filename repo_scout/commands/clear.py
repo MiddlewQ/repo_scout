@@ -4,7 +4,12 @@ from repo_scout.database.nodes import clear_nodes
 from repo_scout.repo_root import *
 from repo_scout.database.init_db import init_db
 
-def run_clear(repo: str, before: float | None = None, after: float | None = None, verbose: bool = False):
+def run_clear(
+    repo: str, 
+    before: float | None = None, 
+    after: float | None = None, 
+    verbose: bool = False
+) -> int:
     repo_root = resolve_repo_root(repo)
     
     if verbose:
@@ -25,6 +30,7 @@ def run_clear(repo: str, before: float | None = None, after: float | None = None
 
     except Exception as e:
         print(e)
+        conn.rollback()
         raise
     finally:
         conn.close()
