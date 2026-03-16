@@ -4,7 +4,12 @@ from repo_scout.database.nodes import file_count, insert_or_update_node, mark_un
 from repo_scout.database.scan_runs import begin_scan_run
 from repo_scout.scan.scan_repo import walk_repo, scannode_to_node
 
-def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: bool) -> int:
+def run_scan(
+    repo: str | None, 
+    ignore: set[str], 
+    depth: int | None, 
+    verbose: bool
+) -> int:
     repo_root = resolve_repo_root(repo)
     if verbose:
         print(f"Repo root: {repo_root}")
@@ -18,6 +23,7 @@ def run_scan(*, repo: str | None, ignore: set[str], depth: int | None, verbose: 
         for node in nodes:
             node = scannode_to_node(node, scan_id)
             insert_or_update_node(conn, node)
+        
         mark_unseen_nodes_deleted(conn, scan_id)
 
         if verbose:
