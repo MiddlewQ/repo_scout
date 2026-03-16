@@ -29,7 +29,7 @@ def run_largest(
             print(f"Found {len(files)} files.")
 
     except Exception as e:
-        conn.rollback()
+        print(e)
         raise
     finally:
         conn.close()
