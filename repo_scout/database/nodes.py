@@ -153,6 +153,7 @@ def filepaths_by_hash(
     SELECT path
     FROM nodes
     WHERE content_hash = ?
+      AND deleted = 0
     """
 
     return [row["path"] for row in conn.execute(sql, (hash,)).fetchall()]
